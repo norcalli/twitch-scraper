@@ -88,3 +88,7 @@ ARGS:
             List of channel names to poll.
 ```
 
+
+### Thanks
+
+Sweet ascii art http://www.patorjk.com/software/taag/
