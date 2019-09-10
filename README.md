@@ -19,10 +19,13 @@ $$\   $$ |$$ |  $$\ $$ |  $$ |$$ |  $$ |$$ |      $$ |      $$ |  $$ |
 
 
 ```sh
-❯ cargo install twitch-scraper
+❯ cargo install twitch-scraper # Install via cargo
     Updating crates.io index
-  Downloaded twitch-scraper v0.1.0
+  Downloaded twitch-scraper v0.1.1
   ...
+
+❯ curl -OL https://github.com/norcalli/twitch-scraper/releases/download/v0.1.1/twitch-scraper \
+	&& chmod +x twitch-scraper # Or download a prebuilt static binary
 
 ❯ twitch-scraper \
 	-q \
@@ -30,11 +33,11 @@ $$\   $$ |$$ |  $$\ $$ |  $$ |$$ |  $$ |$$ |      $$ |      $$ |  $$ |
 	-d /videos/twitch/ \
 	-o "%(channel)s/%(title)s-%(id)s.%(ext)s" \
 	-x $PWD/stream-went-live.sh \
-	naysayer88 demolition_d studio_trigger
+	ashkankiani naysayer88 demolition_d studio_trigger
+[2019-09-10T22:48:13Z INFO  twitch_scraper] Watching ashkankiani with id 443849438
 [2019-09-10T22:48:13Z INFO  twitch_scraper] Watching naysayer88 with id 51679076
 [2019-09-10T22:48:13Z INFO  twitch_scraper] Watching demolition_d with id 4666862
-[2019-09-10T22:48:13Z INFO  twitch_scraper] Watching studio_trigger with id 178995638
-[2019-09-10T22:48:14Z INFO  twitch_scraper] Watching ashkankiani with id 443849438
+[2019-09-10T22:48:14Z INFO  twitch_scraper] Watching studio_trigger with id 178995638
 [2019-09-10T22:50:10Z INFO  twitch_scraper] Downloading stream 35615896368 from ashkankiani
 
 ❯ cat example_scripts/stream-went-live.sh
@@ -44,7 +47,7 @@ Downloading $TWITCH_STREAM_ID"
 
 
 ❯ twitch-scraper --help
-twitch-scraper 0.1.0
+twitch-scraper 0.1.1
 Program to poll twitch via its API and download streams from channels as they come live.
 
 Use RUST_LOG to set logging level. e.g. export RUST_LOG='debug' or export RUST_LOG='twitch_scraper=info'
@@ -117,7 +120,6 @@ OPTIONS:
 ARGS:
     <channel-names>...    
             List of channel names to poll.
-
 ```
 
 ### Planned features
