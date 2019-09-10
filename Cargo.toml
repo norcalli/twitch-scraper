@@ -1,8 +1,16 @@
 [package]
 name = "twitch-scraper"
 version = "0.1.0"
-authors = ["Ashkan Kiani <ashkan.k.kiani@gmail.com>"]
 edition = "2018"
+
+authors = ["Ashkan Kiani <dev.twitch-scraper@kiani.io>"]
+readme = "README.md"
+homepage = "https://github.com/norcalli/twitch-scraper"
+repository = "https://github.com/norcalli/twitch-scraper"
+license = "MIT/Apache-2.0"
+keywords = ["twitch", "devops"]
+description = "A program that helps download live twitch streams."
+include = ["src/*", "Cargo.toml", "README.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
