@@ -16,7 +16,12 @@
 
 
 ```sh
-❯ twitch-scraper -c $TWITCH_CLIENT_ID -d /videos/twitch/ -o "%(channel)s/%(title)s-%(id)s.%(ext)s" -x $PWD/stream-went-live.sh naysayer88 demolition_d studio_trigger
+❯ twitch-scraper \
+	-c $TWITCH_CLIENT_ID \
+	-d /videos/twitch/ \
+	-o "%(channel)s/%(title)s-%(id)s.%(ext)s" \
+	-x $PWD/stream-went-live.sh \
+	naysayer88 demolition_d studio_trigger
 
 ❯ cat example_scripts/stream-went-live.sh
 #!/bin/sh
