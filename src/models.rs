@@ -13,6 +13,7 @@ pub mod search {
             pub id: i64,
             // pub display_name: String,
             pub name: String,
+            pub status: Option<String>,
             #[serde(flatten)]
             pub rest: serde_json::Value,
         }

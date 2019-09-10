@@ -1,3 +1,5 @@
+#![warn(clippy::all)]
+
 use log::*;
 use rand::distributions::{Distribution, Uniform};
 use std::collections::HashMap;
@@ -146,6 +148,9 @@ impl Client {
 }
 
 /// Program to poll twitch via its API and download streams from channels as they come live.
+///
+/// Use RUST_LOG to set logging level.
+/// e.g. export RUST_LOG='debug' or export RUST_LOG='twitch_scraper=info'
 #[derive(StructOpt)]
 struct Opt {
     /// List of channel names to poll.
@@ -173,11 +178,15 @@ struct Opt {
     ///
     /// Useful variables:
     ///
-    /// - %(channel)s
+    /// - %(uploader)s: channel name
+    ///
+    /// - %(description)s: channel status/title
     ///
     /// - %(timestamp)s
     ///
-    /// I personally use "%(channel)s/%(title)s-%(id)s.%(ext)s"
+    /// - %(title)s: for a live stream, looks like 'ashkankiani 2019-09-06 14_19'
+    ///
+    /// I personally use "%(uploader)s/%(title)s-%(description)s-%(id)s.%(ext)s"
     #[structopt(short = "o", long, default_value = "%(title)s-%(id)s.%(ext)s")]
     filename_template: String,
 
@@ -195,6 +204,8 @@ struct Opt {
     ///
     /// - TWITCH_CHANNEL_ID
     ///
+    /// - TWITCH_CHANNEL_STATUS
+    ///
     /// - TWITCH_STREAM_ID
     ///
     /// - TWITCH_STREAM_CREATED_AT
@@ -204,6 +215,12 @@ struct Opt {
     // /// TWITCH_STREAM_TITLE
     #[structopt(short = "x", long, parse(from_os_str))]
     script: Option<PathBuf>,
+
+    /// Quiet output for youtube-dl.
+    ///
+    /// Shortcut for --additional_args=-q.
+    #[structopt(short, long)]
+    quiet: bool,
 }
 
 fn download(
@@ -229,13 +246,17 @@ fn download(
 
 fn main() -> Result<()> {
     env_logger::init();
-    let opt = Opt::from_args();
+    let mut opt = Opt::from_args();
     let mut client = Client::new(opt.client_id.clone());
     if let Some(ref script) = opt.script {
         if !script.is_file() {
             error!("Script isn't a file {:?}", script);
             return Err(Error::BadScript);
         }
+    }
+
+    if opt.quiet {
+        opt.additional_args.push("-q".into());
     }
 
     let channel_ids: Vec<_> = opt
@@ -276,10 +297,10 @@ fn main() -> Result<()> {
                     if let Err(err) = std::process::Command::new(script)
                         .env("TWITCH_CHANNEL_ID", stream.channel.id.to_string())
                         .env("TWITCH_CHANNEL_NAME", &stream.channel.name)
+                        .env("TWITCH_CHANNEL_STATUS", &stream.channel.status.unwrap_or_else(String::new))
                         .env("TWITCH_STREAM_ID", stream.id.to_string())
                         .env("TWITCH_STREAM_CREATED_AT", &stream.created_at)
                         .env("YOUTUBE_DL_PID", child.id().to_string())
-                        // .env("TWITCH_STREAM_TITLE", stream.status)
                         .spawn()
                     {
                         error!("Failed to launch script {:?}: {:#?}", script, err);
