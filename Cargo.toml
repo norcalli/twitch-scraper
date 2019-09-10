@@ -1,0 +1,17 @@
+[package]
+name = "twitch-scraper"
+version = "0.1.0"
+authors = ["Ashkan Kiani <ashkan.k.kiani@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = "0.9.20"
+structopt = "0.3.1"
+derive_more = "0.15.0"
+log = "0.4.8"
+env_logger = "0.6.2"
+rand = "0.7.0"
+serde = {version = "1.0.100", features = ["derive"]}
+serde_json = "1.0.40"
