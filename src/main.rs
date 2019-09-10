@@ -18,13 +18,7 @@ pub enum Error {
     BadScript,
 }
 
-// fn exponential_jitter(base: f32) -> impl Iterator<Item = f32> {
-//     let mut rng = rand::thread_rng();
-//     (1..)
-//         .map(|x| (1 << x) - 1)
-//         .map(|slots| base * (Uniform::new_inclusive(0, slots).sample(&mut rng) as f32))
-// }
-
+/// random(0, 2**n - 1) * base
 fn exponential_jitter(base: u64) -> impl Iterator<Item = u64> {
     let mut rng = rand::thread_rng();
     (1..)
@@ -54,7 +48,7 @@ impl Client {
         debug!("{:#?}", request);
 
         // Maximum of 5 seconds .min(n)
-        // Maximum of 5 retries .take(n)
+        // ~Maximum of 5 retries .take(n)~ Retry forever.
         // 100 ms base for the jitter
         // for delay_ms in exponential_jitter(100).map(|x| x.min(1000 * 5)).take(5) {
         for delay_ms in exponential_jitter(100).map(|x| x.min(1000 * 5)) {
