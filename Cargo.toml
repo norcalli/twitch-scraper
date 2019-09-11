@@ -1,6 +1,6 @@
 [package]
 name = "twitch-scraper"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2018"
 
 authors = ["Ashkan Kiani <dev.twitch-scraper@kiani.io>"]

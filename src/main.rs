@@ -280,7 +280,13 @@ fn main() -> Result<()> {
     for delay_ms in std::iter::repeat_with(|| {
         Uniform::new_inclusive(opt.delay_min, opt.delay_max).sample(&mut rng)
     }) {
-        for stream in client.fetch_live_streams(channel_ids.as_slice())?.streams {
+        for stream in client
+            .fetch_live_streams(channel_ids.as_slice())
+            // Sometimes Twitch sends malformed responses, so in case
+            // JSON decoding fails, just use an empty default.
+            .unwrap_or_else(|_| Default::default())
+            .streams
+        {
             in_progress.entry(stream.id).or_insert_with(|| {
                 info!(
                     "Downloading stream {} from {}",
@@ -297,7 +303,10 @@ fn main() -> Result<()> {
                     if let Err(err) = std::process::Command::new(script)
                         .env("TWITCH_CHANNEL_ID", stream.channel.id.to_string())
                         .env("TWITCH_CHANNEL_NAME", &stream.channel.name)
-                        .env("TWITCH_CHANNEL_STATUS", &stream.channel.status.unwrap_or_else(String::new))
+                        .env(
+                            "TWITCH_CHANNEL_STATUS",
+                            &stream.channel.status.unwrap_or_else(String::new),
+                        )
                         .env("TWITCH_STREAM_ID", stream.id.to_string())
                         .env("TWITCH_STREAM_CREATED_AT", &stream.created_at)
                         .env("YOUTUBE_DL_PID", child.id().to_string())
