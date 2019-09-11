@@ -21,10 +21,10 @@ $$\   $$ |$$ |  $$\ $$ |  $$ |$$ |  $$ |$$ |      $$ |      $$ |  $$ |
 ```sh
 ❯ cargo install twitch-scraper # Install via cargo
     Updating crates.io index
-  Downloaded twitch-scraper v0.1.1
+  Downloaded twitch-scraper v0.1.2
   ...
 
-❯ curl -OL https://github.com/norcalli/twitch-scraper/releases/download/v0.1.1/twitch-scraper \
+❯ curl -OL https://github.com/norcalli/twitch-scraper/releases/download/v0.1.2/twitch-scraper \
 	&& chmod +x twitch-scraper # Or download a prebuilt static binary
 
 ❯ twitch-scraper \
@@ -47,7 +47,7 @@ Downloading $TWITCH_STREAM_ID"
 
 
 ❯ twitch-scraper --help
-twitch-scraper 0.1.1
+twitch-scraper 0.1.2
 Program to poll twitch via its API and download streams from channels as they come live.
 
 Use RUST_LOG to set logging level. e.g. export RUST_LOG='debug' or export RUST_LOG='twitch_scraper=info'
