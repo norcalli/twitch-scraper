@@ -35,18 +35,16 @@ $$\   $$ |$$ |  $$\ $$ |  $$ |$$ |  $$ |$$ |      $$ |      $$ |  $$ |
 	-x $PWD/stream-went-live.sh \
 	ashkankiani naysayer88 demolition_d studio_trigger
 	# Example session
-[2019-09-10T22:48:13Z INFO  twitch_scraper] Watching ashkankiani with id 443849438
-[2019-09-10T22:48:13Z INFO  twitch_scraper] Watching naysayer88 with id 51679076
-[2019-09-10T22:48:13Z INFO  twitch_scraper] Watching demolition_d with id 4666862
-[2019-09-10T22:48:14Z INFO  twitch_scraper] Watching studio_trigger with id 178995638
-[2019-09-10T22:50:10Z INFO  twitch_scraper] Downloading stream 35615896368 from ashkankiani
-[2019-09-10T22:51:09Z INFO  twitch_scraper] Finished downloading stream 35615896368
-[2019-09-12T10:01:47Z INFO  twitch_scraper] Downloading stream 35628821840 from naysayer88
+[2019-09-12T16:26:47Z INFO  twitch_scraper] Watching ["demolition_d", "naysayer88", "ashkankiani", "studio_trigger"]
+[2019-09-12T16:34:45Z INFO  twitch_scraper] Downloading stream 35633084336 from ashkankiani
+[2019-09-12T16:36:21Z INFO  twitch_scraper] Finished downloading stream 35633084336
+[2019-09-13T10:01:47Z INFO  twitch_scraper] Downloading stream 35628821840 from naysayer88
 ERROR: ffmpeg exited with code 255
-[2019-09-12T10:02:19Z ERROR twitch_scraper] Downloading of stream 35628821840 failed with status ExitStatus(ExitStatus(256))
-[2019-09-12T10:02:19Z INFO  twitch_scraper] Downloading stream 35628821840 from naysayer88
-[2019-09-12T10:02:49Z ERROR twitch_scraper] Downloading of stream 35628821840 failed with status ExitStatus(ExitStatus(15))
-[2019-09-12T10:02:50Z INFO  twitch_scraper] Downloading stream 35628821840 from naysayer88
+[2019-09-13T10:02:19Z ERROR twitch_scraper] Downloading of stream 35628821840 from naysayer88 failed with status ExitStatus(ExitStatus(256))
+[2019-09-13T10:02:19Z INFO  twitch_scraper] Downloading stream 35628821840 from naysayer88
+[2019-09-13T10:02:49Z ERROR twitch_scraper] Downloading of stream 35628821840 from naysayer88 failed with status ExitStatus(ExitStatus(15))
+[2019-09-13T10:02:50Z INFO  twitch_scraper] Downloading stream 35628821840 from naysayer88
+[2019-09-13T12:00:47Z INFO  twitch_scraper] Finished downloading stream 35628821840 from naysayer88
 
 ❯ cat example_scripts/stream-went-live.sh
 #!/bin/sh
@@ -108,6 +106,7 @@ OPTIONS:
             
             Useful variables:
              - %(uploader)s: channel name
+             - %(uploader_id)s: channel name (lowercase)
              - %(description)s: channel status/title
              - %(timestamp)s
              - %(title)s: for a live stream, looks like 'ashkankiani 2019-09-06 14_19'
@@ -136,7 +135,6 @@ OPTIONS:
 ARGS:
     <channel-names>...    
             List of channel names to poll.
-
 ```
 
 ### Planned features
