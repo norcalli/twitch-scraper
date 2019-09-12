@@ -2,7 +2,7 @@
 
 use log::*;
 use rand::distributions::{Distribution, Uniform};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
@@ -147,9 +147,20 @@ impl Client {
     // }
 }
 
+// Use {n} to denote newline due to non-preservation of newlines.
+// https://github.com/TeXitoi/structopt/issues/163
 /// Program to poll twitch via its API and download streams from channels as they come live.
 ///
-/// Use RUST_LOG to set logging level.
+/// Fault tolerance:{n}
+/// - It will retry requests to Twitch API with exponential jitter backoff up to 5s between
+/// retries.{n}
+/// - It will handle API limit rating.{n}
+/// - It will try to restart the download in case youtube-dl fails prematurely.
+///
+/// Sending SIGINT will kill all running downloads.{n}
+/// Sending SIGTERM will keep the downloads running.
+///
+/// Use RUST_LOG to set logging level.{n}
 /// e.g. export RUST_LOG='debug' or export RUST_LOG='twitch_scraper=info'
 #[derive(StructOpt)]
 struct Opt {
@@ -176,17 +187,21 @@ struct Opt {
     ///
     /// See `man youtube-dl` under OUTPUT TEMPLATE for variables to use.
     ///
-    /// Useful variables:
-    ///
-    /// - %(uploader)s: channel name
-    ///
-    /// - %(description)s: channel status/title
-    ///
-    /// - %(timestamp)s
-    ///
+    /// Useful variables:{n}
+    /// - %(uploader)s: channel name{n}
+    /// - %(uploader_id)s: channel name (lowercase){n}
+    /// - %(description)s: channel status/title{n}
+    /// - %(timestamp)s{n}
     /// - %(title)s: for a live stream, looks like 'ashkankiani 2019-09-06 14_19'
     ///
-    /// I personally use "%(uploader)s/%(title)s-%(description)s-%(id)s.%(ext)s"
+    /// Note that in the case of a temporary download failure, when youtube-dl is restarted
+    /// the filename may change, meaning a separate file is created. This occurs with %(title)s,
+    /// which uses the time of downloading as part of the filename.
+    ///
+    /// MPEGTS files can be concatenated together without any complex processing (e.g. with `cat`),
+    /// so these streams can be trivially recomposed.
+    ///
+    /// I personally use "%(uploader)s/%(uploader)s-%(id)s-%(description)s.%(ext)s"{n}{n}
     #[structopt(short = "o", long, default_value = "%(title)s-%(id)s.%(ext)s")]
     filename_template: String,
 
@@ -198,20 +213,13 @@ struct Opt {
 
     /// A script to execute when the stream comes live.
     ///
-    /// These environment variables will be set:
-    ///
-    /// - TWITCH_CHANNEL_NAME
-    ///
-    /// - TWITCH_CHANNEL_ID
-    ///
-    /// - TWITCH_CHANNEL_STATUS
-    ///
-    /// - TWITCH_STREAM_ID
-    ///
-    /// - TWITCH_STREAM_CREATED_AT
-    ///
-    /// - YOUTUBE_DL_PID: The pid of the child process launched with youtube-dl
-    ///
+    /// These environment variables will be set:{n}
+    /// - TWITCH_CHANNEL_NAME{n}
+    /// - TWITCH_CHANNEL_ID{n}
+    /// - TWITCH_CHANNEL_STATUS{n}
+    /// - TWITCH_STREAM_ID{n}
+    /// - TWITCH_STREAM_CREATED_AT{n}
+    /// - YOUTUBE_DL_PID: The pid of the child process launched with youtube-dl{n}
     // /// TWITCH_STREAM_TITLE
     #[structopt(short = "x", long, parse(from_os_str))]
     script: Option<PathBuf>,
@@ -223,13 +231,17 @@ struct Opt {
     quiet: bool,
 }
 
+fn youtube_dl() -> std::process::Command {
+    std::process::Command::new("youtube-dl")
+}
+
 fn download(
     directory: &PathBuf,
     filename_template: &str,
     channel_name: &str,
     extra: &[String],
 ) -> Result<std::process::Child> {
-    let mut cmd = std::process::Command::new("youtube-dl");
+    let mut cmd = youtube_dl();
     cmd.arg("--write-info-json")
         .arg("--hls-use-mpegts")
         .arg("--no-part")
@@ -276,10 +288,46 @@ fn main() -> Result<()> {
 
     // let mut in_progress = Arc::new(Mutex::new(HashMap::new()));
     let mut in_progress = HashMap::new();
+    // finished is necessary because when a stream completes, it will be restarted
+    // if
+    let mut finished = HashSet::new();
     let mut rng = rand::thread_rng();
     for delay_ms in std::iter::repeat_with(|| {
         Uniform::new_inclusive(opt.delay_min, opt.delay_max).sample(&mut rng)
     }) {
+        in_progress.retain(|&stream_id, child: &mut std::process::Child| {
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    if status.success() {
+                        // If the stream has exited, clean up resources, however small.
+                        info!("Finished downloading stream {}", stream_id);
+                        finished.insert(stream_id);
+                    } else {
+                        // By removing the child here, if the stream is still continuing, then it will
+                        // be restarted in the next section. Therefore, streams are restarted when youtube-dl
+                        // fails prematurely, which is the state: STREAM_ONGOING && CHILD NONEXISTANT
+                        error!(
+                            "Downloading of stream {} failed with status {:?}",
+                            stream_id, status
+                        );
+                        let mut is_online = false;
+                        // youtube_dl().arg("-g").arg(format!("https://www.twitch.tv/{}", channel_name));
+                        if !is_online {
+                            finished.insert(stream_id);
+                        }
+                    }
+                    false
+                }
+                // Retain ongoing downloads
+                Ok(None) => true,
+                Err(err) => {
+                    // This could be a transient error, so I'll just warn here.
+                    // TODO check why try_wait() could fail.
+                    warn!("Failed to query child for stream {}, {:#?}", stream_id, err);
+                    true
+                }
+            }
+        });
         for stream in client
             .fetch_live_streams(channel_ids.as_slice())
             // Sometimes Twitch sends malformed responses, so in case
@@ -287,6 +335,9 @@ fn main() -> Result<()> {
             .unwrap_or_else(|_| Default::default())
             .streams
         {
+            if finished.contains(&stream.id) {
+                continue;
+            }
             in_progress.entry(stream.id).or_insert_with(|| {
                 info!(
                     "Downloading stream {} from {}",
