@@ -35,13 +35,15 @@ pub type Result<T> = std::result::Result<T, Error>;
 struct Client {
     inner: reqwest::Client,
     client_id: String,
+    token: String
 }
 
 impl Client {
-    fn new(client_id: impl Into<String>) -> Self {
+    fn new(client_id: impl Into<String>, token: impl Into<String>) -> Self {
         Self {
             inner: reqwest::Client::new(),
             client_id: client_id.into(),
+            token: token.into(),
         }
     }
 
@@ -72,7 +74,10 @@ impl Client {
     }
 
     fn fetch_v5(&mut self, request: reqwest::RequestBuilder) -> Result<reqwest::Response> {
-        self.fetch(request.header(reqwest::header::ACCEPT, "application/vnd.twitchtv.v5+json"))
+        debug!("REQUEST_v5: {:#?}", request);
+        self.fetch(request.header(
+            reqwest::header::ACCEPT, "application/vnd.twitchtv.v5+json"
+        ))
     }
 
     fn fetch_channel_id(&mut self, channel_name: &str) -> Result<i64> {
@@ -154,6 +159,8 @@ impl Client {
                 .fetch(
                     self.inner
                         .get("https://api.twitch.tv/helix/streams/")
+                        .header("Client-ID", &self.client_id)
+                        .header("Authorization", format!("Bearer {}", &self.token))
                         .query(&query_params),
                 )?
                 .json()?;
@@ -221,6 +228,10 @@ struct Opt {
     /// Twitch client id
     #[structopt(short, long)]
     client_id: String,
+
+    /// Twitch client token
+    #[structopt(short = "t", long)]
+    token: String,
 
     /// Maximum milliseconds to wait before polling again
     #[structopt(long, default_value = "3000")]
@@ -321,7 +332,7 @@ struct DownloadJob {
 fn main() -> Result<()> {
     env_logger::init();
     let mut opt = Opt::from_args();
-    let mut client = Client::new(opt.client_id.clone());
+    let mut client = Client::new(opt.client_id.clone(), opt.token.clone());
     if let Some(ref script) = opt.script {
         if !script.is_file() {
             error!("Script isn't a file {:?}", script);
